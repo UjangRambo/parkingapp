@@ -32,7 +32,7 @@ class ExportController extends Controller
     /**
      * Export rekap transaksi as CSV.
      */
-    public function csv(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function csv(Request $request): StreamedResponse
     {
         $transaksis = $this->buildQuery($request)->get();
 
