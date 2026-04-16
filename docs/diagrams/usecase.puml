@@ -1,0 +1,144 @@
+@startuml FastTrack_UseCase
+!theme plain
+left to right direction
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 10
+skinparam actorStyle awesome
+skinparam usecase {
+    BackgroundColor #EEF2FF
+    BorderColor #6366F1
+    FontColor #1E293B
+    FontSize 10
+}
+skinparam actor {
+    BackgroundColor #6366F1
+    FontColor #1E293B
+    BorderColor #4F46E5
+    FontSize 9
+    FontStyle bold
+}
+skinparam package {
+    BackgroundColor #F8FAFC
+    BorderColor #CBD5E1
+    FontColor #475569
+    FontSize 10
+    Padding 6
+}
+skinparam ArrowColor #6366F1
+skinparam ArrowFontColor #475569
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 8
+skinparam Padding 2
+skinparam Spacing 10
+
+title FastTrack — Use Case Diagram
+
+' ── ACTORS ──────────────────────────────────────────
+actor "Pengunjung\n(Tamu)" as Pengunjung #94A3B8
+actor "Karyawan\n(Kartu Parkir)" as Karyawan #F97316
+actor "Petugas\n(Gate Operator)" as Petugas
+actor "Admin\n(System Control)" as Admin
+actor "Owner\n(Management)" as Owner
+
+' ── PUBLIC ──────────────────────────────────────────
+package "🌐 Public" {
+    usecase "Lihat Landing Page" as UC_Landing
+    usecase "Login (via Navbar)"  as UC_Login
+}
+
+' ── GATE MASUK ──────────────────────────────────────
+package "🚗 Gate Masuk" {
+    usecase "Pilih Jenis Kendaraan"  as UC_PilihJenis
+    usecase "Generate Tiket QR"      as UC_GenQR
+    usecase "Capture Foto Masuk"     as UC_FotoMasuk
+    usecase "Tampilkan Tiket"        as UC_TiketMasuk
+    usecase "Scan Kartu Karyawan"    as UC_ScanKartu
+    usecase "Check-in Gratis"        as UC_KaryawanMasuk
+}
+
+' ── GATE KELUAR ─────────────────────────────────────
+package "🚙 Gate Keluar" {
+    usecase "Scan QR / Input Manual" as UC_ScanQR
+    usecase "Hitung Biaya"           as UC_HitungBiaya
+    usecase "Proses Pembayaran"      as UC_Bayar
+    usecase "Cetak Struk"            as UC_Struk
+    usecase "Monitor Kendaraan Aktif" as UC_KendaraanAktif
+}
+
+' ── PETUGAS DASHBOARD ───────────────────────────────
+package "📊 Dashboard Petugas" {
+    usecase "Monitor Kapasitas"      as UC_MonitorKapasitas
+    usecase "Transaksi Terkini"      as UC_RecentTrx
+}
+
+' ── ADMIN PANEL ─────────────────────────────────────
+package "⚙️ Admin Panel" {
+    usecase "Dashboard (KPI & Chart)" as UC_AdminDashboard
+    usecase "Kelola User"             as UC_CRUDUser
+    usecase "Kelola Tarif"            as UC_CRUDTarif
+    usecase "Kelola Area Parkir"      as UC_CRUDArea
+    usecase "Kelola Kendaraan\n& Kartu Karyawan" as UC_CRUDKendaraan
+    usecase "Log Aktivitas"           as UC_Logs
+}
+
+' ── OWNER ANALYTICS ─────────────────────────────────
+package "📈 Owner Analytics" {
+    usecase "Executive Dashboard"    as UC_OwnerDashboard
+    usecase "Rekap Transaksi"        as UC_Rekap
+    usecase "Export CSV"             as UC_ExportCSV
+    usecase "Export PDF"             as UC_ExportPDF
+}
+
+' ── ASSOCIATIONS ────────────────────────────────────
+
+' Public
+Pengunjung --> UC_Landing
+Pengunjung --> UC_Login
+Karyawan   --> UC_Landing
+Petugas    --> UC_Login
+Admin      --> UC_Login
+Owner      --> UC_Login
+
+' Gate Masuk — Pengunjung
+Pengunjung  --> UC_PilihJenis
+UC_PilihJenis ..> UC_GenQR      : <<include>>
+UC_GenQR      ..> UC_FotoMasuk  : <<include>>
+UC_GenQR      ..> UC_TiketMasuk : <<include>>
+
+' Gate Masuk — Karyawan
+Karyawan        --> UC_ScanKartu
+UC_ScanKartu    ..> UC_KaryawanMasuk : <<include>>
+UC_KaryawanMasuk..> UC_FotoMasuk     : <<extend>>
+
+' Gate Masuk — Petugas
+Petugas --> UC_PilihJenis
+Petugas --> UC_ScanKartu
+
+' Gate Keluar
+Petugas        --> UC_ScanQR
+Petugas        --> UC_KendaraanAktif
+UC_ScanQR      ..> UC_HitungBiaya : <<include>>
+UC_HitungBiaya ..> UC_Bayar       : <<include>>
+UC_Bayar       ..> UC_Struk       : <<include>>
+
+' Petugas Dashboard
+Petugas --> UC_MonitorKapasitas
+Petugas --> UC_RecentTrx
+
+' Admin
+Admin --> UC_AdminDashboard
+Admin --> UC_CRUDUser
+Admin --> UC_CRUDTarif
+Admin --> UC_CRUDArea
+Admin --> UC_CRUDKendaraan
+Admin --> UC_Logs
+Admin --> UC_ScanQR
+Admin --> UC_Rekap
+
+' Owner
+Owner --> UC_OwnerDashboard
+Owner --> UC_Rekap
+UC_Rekap ..> UC_ExportCSV : <<extend>>
+UC_Rekap ..> UC_ExportPDF : <<extend>>
+
+@enduml

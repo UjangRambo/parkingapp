@@ -1,0 +1,144 @@
+@startuml FastTrack_ERD
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 11
+skinparam class {
+    BackgroundColor #EEF2FF
+    BorderColor #6366F1
+    HeaderBackgroundColor #6366F1
+    HeaderFontColor #FFFFFF
+    FontColor #1E293B
+    AttributeFontColor #374151
+    FontSize 11
+    AttributeFontSize 10
+}
+skinparam ArrowColor #6366F1
+skinparam ArrowThickness 1.5
+skinparam ArrowFontSize 10
+skinparam ArrowFontColor #4F46E5
+skinparam NoteBackgroundColor #F1F5F9
+skinparam NoteBorderColor #CBD5E1
+skinparam NoteFontColor #64748B
+skinparam NoteFontSize 9
+skinparam linetype ortho
+skinparam Padding 4
+skinparam Spacing 35
+
+title FastTrack — Entity Relationship Diagram\n<size:10><color:#6366F1>● 1:1  One-to-One    ● 1:N  One-to-Many    ● M:N  Many-to-Many</color></size>
+
+' ══════════════════════════════════════════
+' ENTITIES
+' ══════════════════════════════════════════
+
+entity "tb_user" as User {
+    * **id_user** : INTEGER <<PK, AI>>
+    --
+    * nama_lengkap : VARCHAR(50)
+    * username     : VARCHAR(50) <<UNIQUE>>
+    * password     : VARCHAR(100)
+    * role         : ENUM('admin','petugas','owner')
+    * status_aktif : BOOLEAN
+    email          : VARCHAR(255) <<nullable>>
+    remember_token : VARCHAR(100) <<nullable>>
+}
+
+entity "tb_kendaraan" as Kendaraan {
+    * **id_kendaraan**  : INTEGER <<PK, AI>>
+    --
+    * plat_nomor        : VARCHAR(15)
+    * jenis_kendaraan   : VARCHAR(20)
+    warna               : VARCHAR(20) <<nullable>>
+    pemilik             : VARCHAR(100) <<nullable>>
+    kode_kartu          : VARCHAR(20) <<UNIQUE, nullable>>
+}
+
+entity "tb_tarif" as Tarif {
+    * **id_tarif**      : INTEGER <<PK, AI>>
+    --
+    * jenis_kendaraan   : VARCHAR(20) <<UNIQUE>>
+    * tarif_per_jam     : DECIMAL(10,0)
+}
+
+entity "tb_area_parkir" as Area {
+    * **id_area**   : INTEGER <<PK, AI>>
+    --
+    * nama_area     : VARCHAR(50)
+    * kapasitas     : INTEGER
+    * terisi        : INTEGER DEFAULT 0
+    jenis_khusus    : VARCHAR(20) <<nullable>>
+}
+
+' ── tb_transaksi sebagai ASSOCIATIVE ENTITY (junction Kendaraan ↔ Area) ──
+entity "tb_transaksi\n<<Associative Entity>>" as Transaksi #E0E7FF {
+    * **id_parkir**  : INTEGER <<PK, AI>>
+    --
+    * kode_qr        : VARCHAR(100) <<UNIQUE>>
+    id_kendaraan     : INTEGER <<FK, nullable>>
+    * id_area        : INTEGER <<FK>>
+    id_tarif         : INTEGER <<FK, nullable>>
+    id_user          : INTEGER <<FK, nullable>>
+    * waktu_masuk    : DATETIME
+    waktu_keluar     : DATETIME <<nullable>>
+    durasi_jam       : INTEGER <<nullable>>
+    biaya_total      : DECIMAL(10,0) <<nullable>>
+    foto_masuk       : VARCHAR(255) <<nullable>>
+    foto_keluar      : VARCHAR(255) <<nullable>>
+    * status         : ENUM('masuk','keluar')
+}
+
+entity "tb_log_aktivitas" as Log {
+    * **id_log**        : INTEGER <<PK, AI>>
+    --
+    * id_user           : INTEGER <<FK>>
+    * aktivitas         : VARCHAR(100)
+    * waktu_aktivitas   : DATETIME
+}
+
+' ══════════════════════════════════════════
+' RELATIONSHIPS
+' ══════════════════════════════════════════
+
+' ─── 1:1 ───────────────────────────────
+' Setiap jenis_kendaraan memiliki tepat satu tarif (referential via jenis_kendaraan)
+Kendaraan "1" ||--|| "1" Tarif : "1:1\nmemiliki tarif >"
+
+' ─── 1:N ───────────────────────────────
+' Satu User memproses banyak Transaksi
+User "1" ||--o{ "N" Transaksi : "1:N\nmemproses >"
+
+' Satu User memiliki banyak Log
+User "1" ||--o{ "N" Log : "1:N\nmencatat >"
+
+' Satu Area menampung banyak Transaksi
+Area "1" ||--o{ "N" Transaksi : "1:N\nberlokasi di >"
+
+' Satu Tarif diterapkan pada banyak Transaksi
+Tarif "1" |o--o{ "N" Transaksi : "1:N\nditerapkan pada >"
+
+' ─── M:N (via Associative Entity tb_transaksi) ────
+' Satu Kendaraan bisa parkir di banyak Area (berbeda sesi)
+' Satu Area menampung banyak Kendaraan (berbeda sesi)
+Kendaraan "M" }o--o{ "N" Area : "M:N\n(via tb_transaksi)"
+
+' ══════════════════════════════════════════
+' NOTES
+' ══════════════════════════════════════════
+note bottom of Transaksi
+    **tb_transaksi** bertindak sebagai associative entity
+    yang meresolusi relasi M:N antara Kendaraan dan Area.
+    ─────────────────────────────────────────
+    • id_kendaraan = NULL  → Pengunjung tanpa kartu
+    • id_tarif = NULL      → Karyawan (gratis, biaya = 0)
+    • kode_qr pengunjung: "FT-XXXX-YYYYMMDDHHmmss"
+    • kode_qr karyawan:   = kode_kartu ("KRY-XXXXX")
+end note
+
+note right of Kendaraan
+    **Relasi 1:1 ke Tarif:**
+    Diimplementasikan melalui
+    kesamaan kolom jenis_kendaraan.
+    Setiap jenis kendaraan hanya
+    memiliki satu tarif unik.
+end note
+
+@enduml
