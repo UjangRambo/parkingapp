@@ -85,14 +85,24 @@
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-slate-900 dark:text-white font-bold">Pendapatan 7 Hari</h3>
             </div>
-            @php $maxRevenue = max(array_column($weeklyData, 'total') ?: [1]); if ($maxRevenue == 0) $maxRevenue = 1; @endphp
-            <div class="flex items-end gap-2 h-32">
+            @php
+                $maxRevenue = max(array_column($weeklyData, 'total') ?: [1]);
+                if ($maxRevenue == 0) $maxRevenue = 1;
+            @endphp
+            <div class="flex items-end gap-1.5 h-36">
                 @foreach($weeklyData as $day)
-                @php $barH = max(4, round(($day['total'] / $maxRevenue) * 100)); @endphp
-                <div class="flex-1 flex flex-col items-center gap-1">
-                    <div class="w-full rounded-t-md bar-accent" title="Rp {{ number_format($day['total'],0,',','.') }}"
-                         style="height: {{ $barH }}%; min-height: 4px; transition: height 0.6s ease;"></div>
-                    <span class="text-xs text-slate-500 dark:text-white/30">{{ $day['label'] }}</span>
+                @php
+                    // 112px = container h-36 (144px) - 32px label area
+                    $barPx = max(4, (int) round(($day['total'] / $maxRevenue) * 112));
+                @endphp
+                <div class="flex-1 flex flex-col items-center justify-end gap-1 h-full group cursor-pointer"
+                     title="Rp {{ number_format($day['total'],0,',','.') }}">
+                    <span class="text-[9px] font-semibold text-slate-400 dark:text-white/30 opacity-0 group-hover:opacity-100 transition-opacity -mb-0.5">
+                        {{ $day['total'] > 0 ? number_format($day['total']/1000,0).'k' : '' }}
+                    </span>
+                    <div class="w-full rounded-t-lg bar-accent transition-all duration-700"
+                         style="height: {{ $barPx }}px;"></div>
+                    <span class="text-[10px] text-slate-400 dark:text-white/30 flex-shrink-0 mt-0.5">{{ $day['label'] }}</span>
                 </div>
                 @endforeach
             </div>

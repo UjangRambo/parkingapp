@@ -468,15 +468,23 @@
         }
     }
 
-    // Capture Utility
+    // Capture Utility — supports multiple video elements sharing one stream
     window.ftWebcam = {
         stream: null,
-        async start(videoEl) {
+        async start(...videoEls) {
             try {
-                this.stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } 
-                });
-                videoEl.srcObject = this.stream;
+                // Reuse existing stream if still active
+                if (!this.stream || !this.stream.active) {
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+                    });
+                }
+                // Assign the same stream to all provided video elements
+                for (const el of videoEls) {
+                    if (el && el.srcObject !== this.stream) {
+                        el.srcObject = this.stream;
+                    }
+                }
                 return true;
             } catch (e) {
                 console.error('Kamera gagal:', e);
@@ -490,11 +498,11 @@
             }
         },
         capture(videoEl) {
+            if (!videoEl || !videoEl.videoWidth) return null;
             const canvas = document.createElement('canvas');
-            canvas.width = videoEl.videoWidth;
+            canvas.width  = videoEl.videoWidth;
             canvas.height = videoEl.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(videoEl, 0, 0);
+            canvas.getContext('2d').drawImage(videoEl, 0, 0);
             return canvas.toDataURL('image/jpeg', 0.8);
         }
     };

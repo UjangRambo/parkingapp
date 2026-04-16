@@ -50,10 +50,10 @@
                 <input wire:model="kode_qr" id="input-kode-qr" type="text"
                        class="ft-input font-mono text-center" style="padding:14px;letter-spacing:0.05em;"
                        placeholder="FT-XXXX-20241201120000"
-                       @keydown.enter="$wire.cariQr()">
+                       @keydown.enter="captureAndSearch()">
                 @error('kode_qr')<p class="text-red-400 text-xs mt-1.5 text-center">{{ $message }}</p>@enderror
             </div>
-            <button wire:click="cariQr" wire:loading.attr="disabled"
+            <button @click="captureAndSearch()" wire:loading.attr="disabled"
                     class="w-full justify-center py-4 rounded-xl font-bold text-base text-slate-900 dark:text-white flex items-center gap-2"
                     style="background:linear-gradient(135deg,rgba(52,211,153,0.25),rgba(16,185,129,0.15));border:1px solid rgba(52,211,153,0.4);">
                 <span wire:loading.remove wire:target="cariQr"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803a7.5 7.5 0 0010.607 10.607z"/></svg></span>
@@ -150,9 +150,12 @@
                         await this._qr.start(
                             { facingMode: 'environment' },
                             { fps: 10, qrbox: { width: 220, height: 220 } },
-                            (text) => {
-                                this.stopScanner();
-                                @this.call('scanDariKamera', text);
+                            async (text) => {
+                                // Capture frame dari video Html5Qrcode SEBELUM stop
+                                const foto = this.captureFromReader();
+                                await this.stopScanner();
+                                if (foto) await @this.set('foto_capture', foto);
+                                await @this.call('scanDariKamera', text);
                             },
                             () => { /* continuous scan — ignore failures */ }
                         );
@@ -163,9 +166,11 @@
                             await this._qr.start(
                                 { facingMode: 'user' },
                                 { fps: 10, qrbox: { width: 220, height: 220 } },
-                                (text) => {
-                                    this.stopScanner();
-                                    @this.call('scanDariKamera', text);
+                                async (text) => {
+                                    const foto = this.captureFromReader();
+                                    await this.stopScanner();
+                                    if (foto) await @this.set('foto_capture', foto);
+                                    await @this.call('scanDariKamera', text);
                                 },
                                 () => {}
                             );
@@ -181,6 +186,27 @@
                         try { await this._qr.stop(); } catch (e) {}
                         this.scanning = false;
                     }
+                },
+
+                // Capture frame dari video internal Html5Qrcode — no extra stream needed
+                captureFromReader() {
+                    const video = document.querySelector('#reader video');
+                    if (!video || video.readyState < 2) return null;
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width  = video.videoWidth  || 320;
+                        canvas.height = video.videoHeight || 240;
+                        canvas.getContext('2d').drawImage(video, 0, 0);
+                        return canvas.toDataURL('image/jpeg', 0.85);
+                    } catch (e) {
+                        console.warn('captureFromReader failed:', e);
+                        return null;
+                    }
+                },
+
+                async captureAndSearch() {
+                    // Mode manual: scanner tidak aktif, foto null = OK (nullable di DB)
+                    await @this.call('cariQr');
                 },
             }
         }

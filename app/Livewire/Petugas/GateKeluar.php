@@ -83,14 +83,17 @@ class GateKeluar extends Component
 
         if ($isKaryawan) {
             // Auto-checkout langsung gratis
-            $keluar = now();
-            $durasi = (int) ceil($t->waktu_masuk->diffInMinutes($keluar) / 60);
+            $keluar   = now();
+            $durasi   = (int) ceil($t->waktu_masuk->diffInMinutes($keluar) / 60);
             if ($durasi < 1) $durasi = 1;
+
+            $fotoPath = $this->simpanFoto($this->foto_capture);
 
             $t->update([
                 'waktu_keluar' => $keluar,
                 'durasi_jam'   => $durasi,
                 'biaya_total'  => 0,
+                'foto_keluar'  => $fotoPath,
                 'status'       => 'keluar',
                 'id_user'      => auth()->id(),
             ]);

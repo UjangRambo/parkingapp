@@ -37,6 +37,8 @@
                     { fps: 10, qrbox: { width: 220, height: 220 } },
                     async (kode) => {
                         await this.stopScanner();
+                        const foto = await this.capturePhoto();
+                        await $wire.set('foto_capture', foto);
                         await $wire.scanDariKamera(kode);
                     },
                     () => {}
@@ -49,6 +51,8 @@
                         { fps: 10, qrbox: { width: 220, height: 220 } },
                         async (kode) => {
                             await this.stopScanner();
+                            const foto = await this.capturePhoto();
+                            await $wire.set('foto_capture', foto);
                             await $wire.scanDariKamera(kode);
                         },
                         () => {}
@@ -67,15 +71,24 @@
             }
         },
 
+        async capturePhoto() {
+            // Ambil dari video pengunjung atau video karyawan (hidden)
+            const vid = this.$refs.video || this.$refs.videoKaryawan;
+            return window.ftWebcam && vid ? window.ftWebcam.capture(vid) : null;
+        },
+
         async capture(jenis) {
-            const base64 = window.ftWebcam && this.$refs.video ? window.ftWebcam.capture(this.$refs.video) : null;
+            const base64 = await this.capturePhoto();
             await $wire.set('foto_capture', base64);
             await $wire.submitKendaraan(jenis);
         },
 
         async initWebcam() {
-            if (window.ftWebcam && this.$refs.video) {
-                await window.ftWebcam.start(this.$refs.video);
+            // Share satu stream ke dua video (pengunjung + karyawan hidden)
+            // menggunakan rest params baru di ftWebcam.start()
+            if (window.ftWebcam) {
+                const els = [this.$refs.video, this.$refs.videoKaryawan].filter(Boolean);
+                if (els.length) await window.ftWebcam.start(...els);
             }
         }
     }"
@@ -87,8 +100,8 @@
                 setTimeout(() => startScanner(), 300);
             } else {
                 await stopScanner();
-                initWebcam();
             }
+            // Webcam tetap jalan di background untuk capture foto
         });
     ">
     <div class="ft-card p-6 space-y-5">
@@ -107,8 +120,12 @@
             </button>
         </div>
 
-        {{-- Tab: Kartu Karyawan (QR Scanner) --}}
+        {{-- Tab: Kartu Karyawan (QR Scanner + Hidden Webcam for photo) --}}
         <div x-show="tab === 'karyawan'" style="display:none;" class="space-y-4">
+            {{-- Webcam tersembunyi untuk ambil foto karyawan --}}
+            <video x-ref="videoKaryawan" autoplay playsinline
+                   class="absolute opacity-0 pointer-events-none" style="width:1px;height:1px;"></video>
+
             <div class="text-center mb-2">
                 <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
                      style="background:rgba(99,102,241,0.1);border:1.5px dashed rgba(99,102,241,0.35);">

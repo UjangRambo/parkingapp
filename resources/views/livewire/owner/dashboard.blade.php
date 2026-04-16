@@ -21,7 +21,7 @@
             <div class="flex gap-2 h-40">
                 @foreach($weeklyRevenue as $day)
                 @php $barH = max(4,round(($day['total']/$maxRev)*100)); @endphp
-                <div class="flex-1 flex flex-col justify-end group relative">
+                <div class="flex-1 flex flex-col justify-end group relative h-full">
                     {{-- Tooltip --}}
                     <div class="absolute bottom-full mb-2 hidden group-hover:flex flex-col items-center text-xs z-10 left-1/2 -translate-x-1/2">
                         <div class="rounded-lg px-2 py-1 whitespace-nowrap bg-slate-900 dark:bg-[#1e1e2e] border border-white/10">
